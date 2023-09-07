@@ -1,6 +1,6 @@
 import axios from 'axios'
 import https from 'https'
-import { API_URL, VARIANT_FIELDS, RESULT_FIELDS } from '$lib/consts'
+import { API_URL, VARIANT_FIELDS, RESULT_FIELDS, PROJECT_RESULT_FIELDS, PROJECT_FIELDS } from '$lib/consts'
 import type { IResponse } from '$lib/types'
 import xlsx from 'json-as-xlsx'
 import dayjs from 'dayjs'
@@ -95,19 +95,36 @@ export const exportResultToExcel = async (result: any, union = false, mode: 'pro
     }
 
     if (!union) {
-        const inputsForExcel = VARIANT_FIELDS.map(field => ({
-            parameter: field.description,
-            value: result.inputData[field.name]
-        }))
+        let inputsForExcel = undefined
+        let resultsForExcel = undefined
 
-        const resultsForExcel = RESULT_FIELDS.map(field => ({
-            parameter: field.description,
-            value: result.resultData[field.name]
-        }))
+        if (mode === 'project') {
+            inputsForExcel = PROJECT_FIELDS.map(field => ({
+                parameter: field.description,
+                value: result.comparativeResult.inputProgData[`${field.name}`]
+            }))
+
+            resultsForExcel = PROJECT_RESULT_FIELDS.map(field => ({
+                parameter: field.description,
+                value: result.comparativeResult.resultProgData[`${field.name}`]
+            }))
+
+        } else {
+
+            inputsForExcel = VARIANT_FIELDS.map(field => ({
+                parameter: field.description,
+                value: result.inputData[field.name]
+            }))
+
+            resultsForExcel = RESULT_FIELDS.map(field => ({
+                parameter: field.description,
+                value: result.resultData[field.name]
+            }))
+        }
 
         const data = [
             {
-                sheet: 'Расчет газ. режима (баз.)',
+                sheet: `Расчет газ. режима (${mode === 'project' ? 'проект.' : 'баз.'})`,
                 columns: [
                     { label: 'Параметр', value: 'parameter' },
                     { label: 'Значение', value: 'value' },

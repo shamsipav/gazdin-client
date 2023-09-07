@@ -228,6 +228,11 @@ export interface IUnionFullResult {
     comparativeResult: IFullResult
 }
 
+export interface IUnionProgFullResult {
+    baseResult: IFullProgResult
+    comparativeResult: IFullProgResult
+}
+
 export interface ICoefficients {
     ironMassFractionIncreaseInOreRash: number
     shareCrudeOreReductionCharge: number

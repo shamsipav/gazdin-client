@@ -1,12 +1,10 @@
 <script lang="ts">
     import dayjs from 'dayjs'
     import type { PageData } from './$types'
-    import { API_URL, VARIANT_FIELDS, PROJECT_FIELDS, RESULT_FIELDS } from '$lib/consts'
-    import type { IVariant, IResponse, IUnionFullResult } from '$lib/types'
-    import { fade } from 'svelte/transition'
+    import { API_URL, PROJECT_FIELDS, PROJECT_RESULT_FIELDS } from '$lib/consts'
+    import type { IVariant, IResponse, IUnionProgFullResult } from '$lib/types'
     import axios from 'axios'
     import { exportResultToExcel, getCookie } from '$lib/utils'
-    import { Toast } from '$components'
 
     export let data: PageData
 
@@ -19,7 +17,6 @@
     let selectedVariant
 
     let baseVariant: IVariant
-    let fullResults = false
 
     let notifyMessage = ''
 
@@ -27,7 +24,6 @@
 
     const getCurrentVariant = async (selectedVariant: number) => {
         baseVariant = variants.find(x => x.id == selectedVariant)
-        console.log(baseVariant)
 
         const token = getCookie('token')
 
@@ -38,14 +34,14 @@
         } catch (error) {
             successMessage = ''
             errorMessage = error.response.data.errorMessage
-            console.log(`Не удалось выполнить расчет проектного периода: ${error}`)
+            console.log(`Не удалось получить исходные данные для проектного периода: ${error}`)
         }
 
-        notifyMessage = `Вариант №${baseVariant.id}" успешно загружен`
+        notifyMessage = `Вариант №${baseVariant.id} успешно загружен`
         setTimeout(() => notifyMessage = '', 2500)
     }
 
-    let result: IUnionFullResult
+    let result: IUnionProgFullResult
 
     const getProjectResult = async (e) => {
         const formData = new FormData(e.target)
@@ -55,7 +51,7 @@
         const token = getCookie('token')
 
         try {
-            const response = await axios.post(`${API_URL}/calculate/project?basePeriodId=${selectedVariant}`, data, { params: { inputDataId: selectedVariant }, headers: { 'Authorization': `Bearer ${token}` } })
+            const response = await axios.post(`${API_URL}/calculate/project`, data, { params: { basePeriodId: selectedVariant }, headers: { 'Authorization': `Bearer ${token}` } })
             const responseResult: IResponse = response.data
             result = responseResult.result
         } catch (error) {
@@ -71,11 +67,11 @@
 </svelte:head>
 
 <div class="container">
-    <p class="h3 mb-3">Проектный режим</p>
+    <h4>Проектный режим</h4>
     {#if authorized}
-        <p class="lead mb-2">Вариант исходных данных</p>
+        <h6 style="margin-bottom: 1rem;">Вариант исходных данных</h6>
         {#if variants?.length > 0}
-            <select class="form-select mb-3" bind:value={selectedVariant} aria-label="Default select example" on:change={() => getCurrentVariant(selectedVariant)}>
+            <select class="browser-default" style="margin-top: 1rem;" bind:value={selectedVariant} on:change={() => getCurrentVariant(selectedVariant)}>
                 <option selected disabled>Вариант исходных данных</option>
                 {#each variants as variant}
                     <option value={variant.id}>
@@ -86,8 +82,11 @@
         {:else}
             <p class="mt-3">Нет сохраненных вариантов</p>
         {/if}
+        {#if notifyMessage}
+            <p>{notifyMessage}</p>
+        {/if}
         {#if baseVariant && inputProgData}
-            <form on:submit|preventDefault={getProjectResult} transition:fade>
+            <form on:submit|preventDefault={getProjectResult}>
                 <table class="table">
                     <thead>
                         <tr>
@@ -98,6 +97,25 @@
                     </thead>
                     <tbody>
                         {#each PROJECT_FIELDS as field, i}
+                            {#if field.name === 'p_K16'}
+                                <tr>
+                                    <td><i>Гранулометрический состав кокса ММК<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'p_K20'}
+                                <tr>
+                                    <td><i>Гранулометрический состав и порозность агломерата<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'p_K21'}
+                                <tr>
+                                    <td><i>Порозность, м3/м3(по размеру фракции, мм)</i></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            {/if}
                             <tr>
                                 <td>{field.description}</td>
                                 {#if field.name === 'p_E4'}
@@ -146,109 +164,99 @@
                         {/each}
                     </tbody>
                 </table>
-                <div class="d-flex align-items-center">
-                    <button type="submit" class="btn btn-success">Отправить</button>
+                <div class="d-flex align-items-center" style="margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary">Отправить</button>
                 </div>
             </form>
             {#if errorMessage}
-                <p class="text-danger mt-3" transition:fade>{errorMessage}</p>
+                <p class="text-danger mt-3">{errorMessage}</p>
             {/if}
         {/if}
         {#if result}
-            <div class="result mt-4" transition:fade>
-                <p class="h5 mb-3">Результаты прогноза показателей газодинамического режима доменной плавки</p>
-                <button type="button" class="btn btn-light mb-3" on:click={() => fullResults = !fullResults}>
-                    {fullResults ? 'Краткая форма' : 'Полная форма'}
-                </button>
-                <button type="button" class="btn btn-light mb-3" on:click={() => exportResultToExcel(result, true, 'project')}>Экспорт в Excel</button>
-                {#if fullResults}
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Параметр</th>
-                                <th scope="col">Значение (базовый пер.)</th>
-                                <th scope="col">Значение (сравнительный пер.)</th>
-                                <th scope="col">Отклонение</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="table-warning">
-                                <td colspan="7" class="text-center">Исходные данные</td>
-                            </tr>
-                            {#each VARIANT_FIELDS as field}
-                                <tr transition:fade>
-                                    <td>{field.description}</td>
-                                    <td>{Math.round(result.baseResult.inputData[`${field.name}`] * 100) / 100}</td>
-                                    <td>{Math.round(result.comparativeResult.inputData[`${field.name}`] * 100) / 100}</td>
-                                    <td>{Math.abs(Math.round((result.comparativeResult.inputData[`${field.name}`] - result.baseResult.inputData[`${field.name}`]) * 100) / 100)}</td>
+            <div class="result mt-4">
+                <h5 style="margin-bottom: 1rem;">Результаты прогноза показателей газодинамического режима доменной плавки</h5>
+                <button type="button" class="btn btn-light mb-3" on:click={() => exportResultToExcel(result, false, 'project')}>Экспорт в Excel</button>
+                <table class="table table-result">
+                    <thead>
+                        <tr>
+                            <th scope="col">Параметр</th>
+                            <th scope="col">Значение</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="7" class="text-center">Исходные данные</td>
+                        </tr>
+                        {#each PROJECT_FIELDS as field}
+                            {#if field.name === 'p_K16'}
+                                <tr>
+                                    <td><i>Гранулометрический состав кокса ММК<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                    <td></td>
                                 </tr>
-                            {/each}
-                            <tr class="table-warning">
-                                <td colspan="7" class="text-center">Результаты расчета</td>
-                            </tr>
-                            {#each RESULT_FIELDS as field}
-                                <tr 
-                                    class="{field.name == 'indexOfTheBottomOfTheFurnace' ||
-                                    field.name == 'indexOfTheFurnaceTop' ||
-                                    field.name == 'theoreticalBurningTemperatureOfCarbonCoke' ? 'table-primary' : ''}" 
-                                    transition:fade
-                                >
-                                    {#if field.name !== 'resultDate'}
-                                        <td>{field.description}</td>
-                                        {#if field.name == 'theoreticalBurningTemperatureOfCarbonCoke'}
-                                            <td><mark>{Math.round(result.baseResult.resultData[`${field.name}`])}</mark></td>
-                                            <td><mark>{Math.round(result.comparativeResult.resultData[`${field.name}`])}</mark></td>
-                                            <td>{Math.abs(Math.round(result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]))}</td>
-                                        {:else}
-                                            <td><mark>{Math.round(result.baseResult.resultData[`${field.name}`] * 100) / 100}</mark></td>
-                                            <td><mark>{Math.round(result.comparativeResult.resultData[`${field.name}`] * 100) / 100}</mark></td>
-                                            <td>{Math.abs(Math.round((result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]) * 100) / 100)}</td>
-                                        {/if}
-                                    {/if}
+                            {:else if field.name === 'p_K20'}
+                                <tr>
+                                    <td><i>Гранулометрический состав и порозность агломерата<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                    <td></td>
                                 </tr>
-                            {/each}
-                        </tbody>
-                    </table>
-                {:else}
-                    <table class="table">
-                        <thead>
+                            {:else if field.name === 'p_K21'}
+                                <tr>
+                                    <td><i>Порозность, м3/м3(по размеру фракции, мм)</i></td>
+                                    <td></td>
+                                </tr>
+                            {/if}
                             <tr>
-                                <th scope="col">Параметр</th>
-                                <th scope="col">Значение (базовый пер.)</th>
-                                <th scope="col">Значение (сравнительный пер.)</th>
-                                <th scope="col">Отклонение</th>
+                                <td>{field.description}</td>
+                                <td><mark>{Math.round(result.comparativeResult.inputProgData[`${field.name}`] * 10000) / 10000}</mark></td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {#each RESULT_FIELDS as field}
-                                {#if field.name == 'indexOfTheBottomOfTheFurnace' || field.name == 'indexOfTheFurnaceTop' || field.name == 'theoreticalBurningTemperatureOfCarbonCoke' || field.name == 'resultDate'}
-                                    <tr transition:fade>
-                                        {#if field.name !== 'resultDate'}
-                                            <td>{field.description}</td>
-                                            {#if field.name == 'theoreticalBurningTemperatureOfCarbonCoke'}
-                                                <td><mark>{Math.round(result.baseResult.resultData[`${field.name}`])}</mark></td>
-                                                <td><mark>{Math.round(result.comparativeResult.resultData[`${field.name}`])}</mark></td>
-                                                <td>{Math.abs(Math.round(result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]))}</td>
-                                            {:else}
-                                                <td><mark>{Math.round(result.baseResult.resultData[`${field.name}`] * 100) / 100}</mark></td>
-                                                <td><mark>{Math.round(result.comparativeResult.resultData[`${field.name}`] * 100) / 100}</mark></td>
-                                                <td>{Math.abs(Math.round((result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]) * 100) / 100)}</td>
-                                            {/if}
-                                        {/if}
-                                    </tr>
-                                {/if}
-                            {/each}
-                        </tbody>
-                    </table>
-                {/if}
+                        {/each}
+                        <tr>
+                            <td colspan="7" class="text-center">Результаты расчета</td>
+                        </tr>
+                        <tr>
+                            <td><i>Изменение высоты слоя шихты в печи</i></td>
+                            <td></td>
+                        </tr>
+                        {#each PROJECT_RESULT_FIELDS as field}
+                            {#if field.name === 'd18'}
+                                <tr>
+                                    <td><i>Влияние приращения гранулометрического состава шихтовых материалов на газодинамические характеристики слоя шихты в печи<br/>Влияние гранулометрического состава агломерата и кокса на газодинамические характеристики столба шихты в печи</i></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'd46'}
+                                <tr>
+                                    <td><i>Влияние гранулометрического состава кокса и удельного выхода шлака на газодинамические характеристики слоя шихты в нижней зоне печи</i></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'd79'}
+                                <tr>
+                                    <td><i>Влияние параметров комбинированного дутья на газодинамический режим доменной плавки</i></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'd152'}
+                                <tr>
+                                    <td><i>Влияние давления колошникового газа на газодинамический режим доменной плавки</i></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'd160'}
+                                <tr>
+                                    <td><i>Влияние системы загрузки на газодинамический режим доменной плавки</i></td>
+                                    <td></td>
+                                </tr>
+                            {/if}
+                            <tr>
+                                <td>{field.description}</td>
+                                <td><mark>{Math.round(result.comparativeResult.resultProgData[`${field.name}`] * 10000) / 10000}</mark></td>
+                            </tr>
+                        {/each}
+                        <tr>
+                            <td>Дата проведения расчета</td>
+                            <td>{dayjs(new Date()).format('DD.MM.YYYY HH:mm:ss')}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         {/if}
     {:else}
-        <p>Проектный режим доступен только для авторизированных пользователей</p>
+        <p>Войдите в систему, чтобы воспользоваться функционалом</p>
     {/if}
 </div>
-{#if notifyMessage}
-    <div class="notify" transition:fade>
-        <Toast variant="green">{notifyMessage}</Toast>
-    </div>
-{/if}

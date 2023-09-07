@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { fade } from 'svelte/transition'
     import { redirect, setCookie } from '$lib/utils.js'
     import { createEventDispatcher } from 'svelte'
     import { API_URL } from '$lib/consts'
@@ -14,7 +13,6 @@
 
     let successMessage = ''
     let errorMessage = ''
-    let loaderShow = false
 
     const handleSubmit = async (e) => {
         const ACTION_URL = e.target.action
@@ -23,7 +21,6 @@
         formData.forEach((value, key) => data[key] = value)
 
         try {
-            loaderShow = true
             let res = await fetch(ACTION_URL, {
                 method: 'POST',
                 headers: {
@@ -35,7 +32,6 @@
             const jsonResult: IResponse = await res.json()
 
             if (res.ok) {
-                loaderShow = false
                 errorMessage = ''
                 successMessage = jsonResult.successMsg
 
@@ -48,12 +44,10 @@
                 // e.target.reset()
                 if (redirectTo) redirect(redirectTo)
             } else {
-                loaderShow = false
                 errorMessage = jsonResult.errorMsg
                 successMessage = ''
             }
         } catch (error) {
-            loaderShow = false
             console.error(error)
             errorMessage = 'Попробуйте повторить запрос позже'
         }
@@ -62,15 +56,10 @@
 
 <form class="form" action={path} on:submit|preventDefault={handleSubmit} autocomplete={autocomplete}>
     <slot />
-    {#if loaderShow}
-        <div class="d-block spinner-border mt-2" role="status" transition:fade>
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    {/if}
 </form>
 {#if successMessage}
-    <p class="mt-2 mb-0 text-success" transition:fade>{successMessage}</p>
+    <p class="mt-2 mb-0 text-success">{successMessage}</p>
 {/if}
 {#if errorMessage}
-    <p class="mt-2 mb-0 text-danger" transition:fade>{errorMessage}</p>
+    <p class="mt-2 mb-0 text-danger">{errorMessage}</p>
 {/if}

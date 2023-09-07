@@ -1,9 +1,8 @@
 <script lang="ts">
     import dayjs from 'dayjs'
-    import { fade } from 'svelte/transition'
     import { exportResultToExcel, getCookie, redirect } from '$lib/utils.js'
     import type { IFullResult, IResponse } from '$lib/types'
-    import { VARIANT_FIELDS, RESULT_FIELDS } from '$lib/consts'
+    import { VARIANT_FIELDS, RESULT_FIELDS, PRE_RESULT_FIELDS } from '$lib/consts'
     import { createEventDispatcher } from 'svelte'
 
     const dispatch = createEventDispatcher()
@@ -13,7 +12,6 @@
     export let autocomplete: 'on' | 'off' = 'on'
     export let content: 'application/json' | 'multipart/form-data' = 'application/json'
 
-    let fullResults = false
     let result: IFullResult = undefined
 
     let successMessage = ''
@@ -43,7 +41,6 @@
 
             let jsonResult: IResponse = await res.json()
             result = jsonResult.result
-            console.log(result)
 
             if (res.ok) {
                 loaderShow = false
@@ -68,23 +65,21 @@
     <slot />
 </form>
 {#if successMessage}
-    <p class="mt-2 mb-0 text-success" transition:fade>{successMessage}</p>
+    <p class="mt-2 mb-0 text-success">{successMessage}</p>
 {/if}
 {#if errorMessage}
-    <p class="mt-2 mb-0 text-danger" transition:fade>{errorMessage}</p>
+    <p class="mt-2 mb-0 text-danger">{errorMessage}</p>
 {/if}
 {#if loaderShow}
-    <div class="spinner-border mt-4" role="status" transition:fade>
-        <span class="visually-hidden">Loading...</span>
-    </div>
+    <p>Загрузка...</p>
 {/if}
 <!-- TODO: Вынести отсюда в отдельный компонент -->
 {#if result}
-    <div class="result" transition:fade>
-        <div class="result__full mt-4" transition:fade>
-            <p class="h5 mb-3">Результаты расчета</p>
+    <div class="result">
+        <div class="result__full mt-4">
+            <h5>Результаты расчета</h5>
             <button type="button" class="btn btn-light mb-3" on:click={() => exportResultToExcel(result)}>Экспорт в Excel</button>
-            <table class="table">
+            <table class="table table-result">
                 <thead>
                     <tr>
                         <th scope="col">Параметр</th>
@@ -92,26 +87,81 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="table-warning">
+                    <tr>
                         <td colspan="7" class="text-center">Исходные данные</td>
                     </tr>
+                    <tr>
+                        <td><i>Содержание элементов в шлаке</i></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Fe</td>
+                        <td>{result.resultData['c3']}</td>
+                    </tr>
                     {#each VARIANT_FIELDS as field}
-                        <tr transition:fade>
+                        {#if field.name === 'i40'}
+                            <tr>
+                                <td><i>Гранулометрический состав кокса<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                <td></td>
+                            </tr>
+                        {:else if field.name === 'i45'}
+                            <tr>
+                                <td>Сумма</td>
+                                <td>{Math.round(result.resultData['n40'] * 100) / 100}</td>
+                            </tr>
+                            <tr>
+                                <td>Порозность</td>
+                                <td>{Math.round(result.resultData['h41'] * 100) / 100}</td>
+                            </tr>
+                            <tr>
+                                <td><i>Гранулометрический состав и порозность агломерата<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                <td></td>
+                            </tr>
+                        {:else if field.name === 'j50'}
+                            <tr>
+                                <td>Сумма</td>
+                                <td>{Math.round(result.resultData['m45'] * 100) / 100}</td>
+                            </tr>
+                            <tr>
+                                <td>Порозность</td>
+                                <td>{Math.round(result.resultData['h46'] * 100) / 100}</td>
+                            </tr>
+                            <tr>
+                                <td><i>Гранулометрический состав окатышей<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                <td></td>
+                            </tr>
+                        {/if}
+                        <tr>
                             <td>{field.description}</td>
-                            <!-- <td>{Math.round(result.input[`${field}`] * 100) / 100}</td> -->
                             <td>{result.inputData[`${field.name}`]}</td>
                         </tr>
                     {/each}
-                    <tr class="table-warning">
+                    <tr>
+                        <td>Сумма</td>
+                        <td>{Math.round(result.resultData['m50'] * 100) / 100}</td>
+                    </tr>
+                    <tr>
+                        <td>Порозность</td>
+                        <td>{Math.round(result.resultData['h51'] * 100) / 100}</td>
+                    </tr>
+                    {#each PRE_RESULT_FIELDS as field, i}
+                        {#if i > 0 && i <= 10}
+                            <tr>
+                                <td>{field.description}</td>
+                                <td>{Math.round(result.resultData[`${field.name}`] * 10000) / 10000}</td>
+                            </tr>
+                        {/if}
+                    {/each}
+                    <tr>
                         <td colspan="7" class="text-center">Результаты расчета</td>
                     </tr>
                     {#each RESULT_FIELDS as field}
-                        <tr transition:fade>
+                        <tr>
                             <td>{field.description}</td>
-                            <td><mark>{result.resultData[`${field.name}`]}</mark></td>
+                            <td><mark>{Math.round(result.resultData[`${field.name}`] * 10000) / 10000}</mark></td>
                         </tr>
                     {/each}
-                    <tr transition:fade>
+                    <tr>
                         <td>Дата проведения расчета</td>
                         <td><mark>{dayjs(new Date()).format('DD.MM.YYYY HH:mm:ss')}</mark></td>
                     </tr>

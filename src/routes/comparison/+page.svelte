@@ -2,8 +2,7 @@
     import dayjs from 'dayjs'
     import axios from 'axios'
     import type { IVariant, IResponse, IUnionFullResult } from '$lib/types'
-    import { API_URL, VARIANT_FIELDS, RESULT_FIELDS } from '$lib/consts'
-    import { fade } from 'svelte/transition'
+    import { API_URL, VARIANT_FIELDS, RESULT_FIELDS, PRE_RESULT_FIELDS } from '$lib/consts'
     import type { PageData } from './$types'
     import { exportResultToExcel } from '$lib/utils'
 
@@ -53,13 +52,13 @@
 </svelte:head>
 
 <div class="container">
-    <p class="h3 mb-3">Сравнение параметров расчета базовых периодов</p>
+    <h4>Сравнение параметров расчета базовых периодов</h4>
     {#if authorized}
-        <p class="lead mb-2">Варианты исходных данных</p>
+        <h6 style="margin-bottom: 1rem;">Варианты исходных данных</h6>
         {#if variants?.length > 0}
             <div class="row">
                 <div class="col">
-                    <select class="form-select mb-3" bind:value={baseVariantSelected} aria-label="Default select example" on:change={checkVariants}>
+                    <select class="browser-default" bind:value={baseVariantSelected} aria-label="Default select example" on:change={checkVariants}>
                         <option value=0 selected disabled>Базовый период</option>               
                         {#each variants as variant}
                             <option value={variant.id}>
@@ -69,7 +68,7 @@
                     </select>
                 </div>
                 <div class="col">
-                    <select class="form-select mb-3" bind:value={compVariantSelected} aria-label="Default select example" on:change={checkVariants}>
+                    <select class="browser-default" bind:value={compVariantSelected} aria-label="Default select example" on:change={checkVariants}>
                         <option value=0 selected disabled>Сравнительный период</option>
                         {#each variants as variant}
                             <option value={variant.id}>
@@ -79,18 +78,18 @@
                     </select>
                 </div>
             </div>
-            <button type="button" class="btn btn-success" on:click={getDifference} disabled={disabled}>Сравнить</button>
+            <button type="button" class="btn btn-primary" on:click={getDifference} disabled={disabled}>Сравнить</button>
         {:else}
             <p class="mt-3">Нет сохраненных вариантов</p>
         {/if}
         {#if errorMessage}
-            <p class="text-danger mt-3" transition:fade>{errorMessage}</p>
+            <p class="text-danger mt-3">{errorMessage}</p>
         {/if}
         {#if result}
-            <div class="result mt-4" transition:fade>
-                <p class="h5 mb-3">Результаты сопоставления</p>
+            <div class="result mt-4">
+                <h5 style="margin-bottom: 1rem;">Результаты сопоставления</h5>
                 <button type="button" class="btn btn-light mb-3" on:click={() => exportResultToExcel(result, true, 'comparative')}>Экспорт в Excel</button>
-                <table class="table">
+                <table class="table table-result">
                     <thead>
                         <tr>
                             <th scope="col">Параметр</th>
@@ -100,18 +99,98 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="table-warning">
+                        <tr>
                             <td colspan="7" class="text-center">Исходные данные</td>
                         </tr>
+                        <tr>
+                            <td><i>Содержание элементов в шлаке</i></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Fe</td>
+                            <td>{Math.round(result.baseResult.resultData['c3'] * 100) / 100}</td>
+                            <td>{Math.round(result.comparativeResult.resultData['c3'] * 100) / 100}</td>
+                            <td>{Math.abs(Math.round(result.comparativeResult.resultData['c3'] - result.baseResult.resultData['c3']))}</td>
+                        </tr>
                         {#each VARIANT_FIELDS as field}
-                            <tr transition:fade>
+                            {#if field.name === 'i40'}
+                                <tr>
+                                    <td><i>Гранулометрический состав кокса<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'i45'}
+                                <tr>
+                                    <td>Сумма</td>
+                                    <td>{Math.round(result.baseResult.resultData['n40'] * 100) / 100}</td>
+                                    <td>{Math.round(result.comparativeResult.resultData['n40'] * 100) / 100}</td>
+                                    <td>{Math.abs(Math.round(result.comparativeResult.resultData['n40'] - result.baseResult.resultData['n40']))}</td>
+                                </tr>
+                                <tr>
+                                    <td>Порозность</td>
+                                    <td>{Math.round(result.baseResult.resultData['h41'] * 100) / 100}</td>
+                                    <td>{Math.round(result.comparativeResult.resultData['h41'] * 100) / 100}</td>
+                                    <td>{Math.abs(Math.round(result.comparativeResult.resultData['h41'] - result.baseResult.resultData['h41']))}</td>
+                                </tr>
+                                <tr>
+                                    <td><i>Гранулометрический состав и порозность агломерата<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            {:else if field.name === 'j50'}
+                                <tr>
+                                    <td>Сумма</td>
+                                    <td>{Math.round(result.baseResult.resultData['m45'] * 100) / 100}</td>
+                                    <td>{Math.round(result.comparativeResult.resultData['m45'] * 100) / 100}</td>
+                                    <td>{Math.abs(Math.round(result.comparativeResult.resultData['m45'] - result.baseResult.resultData['m45']))}</td>
+                                </tr>
+                                <tr>
+                                    <td>Порозность</td>
+                                    <td>{Math.round(result.baseResult.resultData['h46'] * 100) / 100}</td>
+                                    <td>{Math.round(result.comparativeResult.resultData['h46'] * 100) / 100}</td>
+                                    <td>{Math.abs(Math.round(result.comparativeResult.resultData['h46'] - result.baseResult.resultData['h46']))}</td>
+                                </tr>
+                                <tr>
+                                    <td><i>Гранулометрический состав окатышей<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            {/if}
+                            <tr>
                                 <td>{field.description}</td>
-                                <td>{Math.round(result.baseResult.inputData[`${field.name}`] * 100) / 100}</td>
-                                <td>{Math.round(result.comparativeResult.inputData[`${field.name}`] * 100) / 100}</td>
-                                <td>{Math.abs(Math.round((result.comparativeResult.inputData[`${field.name}`] - result.baseResult.inputData[`${field.name}`]) * 100) / 100)}</td>
+                                <td>{Math.round(result.baseResult.inputData[`${field.name}`] * 10000) / 10000}</td>
+                                <td>{Math.round(result.comparativeResult.inputData[`${field.name}`] * 10000) / 10000}</td>
+                                <td>{Math.abs(Math.round((result.comparativeResult.inputData[`${field.name}`] - result.baseResult.inputData[`${field.name}`]) * 10000) / 10000)}</td>
                             </tr>
                         {/each}
-                        <tr class="table-warning">
+                        <tr>
+                            <td>Сумма</td>
+                            <td>{Math.round(result.baseResult.resultData['m50'] * 100) / 100}</td>
+                            <td>{Math.round(result.comparativeResult.resultData['m50'] * 100) / 100}</td>
+                            <td>{Math.abs(Math.round(result.comparativeResult.resultData['m50'] - result.baseResult.resultData['m50']))}</td>
+                        </tr>
+                        <tr>
+                            <td>Порозность</td>
+                            <td>{Math.round(result.baseResult.resultData['h51'] * 100) / 100}</td>
+                            <td>{Math.round(result.comparativeResult.resultData['h51'] * 100) / 100}</td>
+                            <td>{Math.abs(Math.round(result.comparativeResult.resultData['h51'] - result.baseResult.resultData['h51']))}</td>
+                        </tr>
+                        {#each PRE_RESULT_FIELDS as field, i}
+                            {#if i > 0 && i <= 10}
+                                <tr>
+                                    <td>{field.description}</td>
+                                    <td>{Math.round(result.baseResult.resultData[`${field.name}`] * 10000) / 10000}</td>
+                                    <td>{Math.round(result.comparativeResult.resultData[`${field.name}`] * 10000) / 10000}</td>
+                                    <td>{Math.abs(Math.round((result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]) * 10000) / 10000)}</td>
+                                </tr>
+                            {/if}
+                        {/each}
+                        <tr>
                             <td colspan="7" class="text-center">Результаты расчета</td>
                         </tr>
                         {#each RESULT_FIELDS as field}
@@ -119,20 +198,12 @@
                                 class="{field.name == 'indexOfTheBottomOfTheFurnace' ||
                                 field.name == 'indexOfTheFurnaceTop' ||
                                 field.name == 'theoreticalBurningTemperatureOfCarbonCoke' ? 'table-primary' : ''}" 
-                                transition:fade
+                               
                             >
-                                {#if field.name !== 'resultDate'}
-                                    <td>{field.description}</td>
-                                    {#if field.name == 'theoreticalBurningTemperatureOfCarbonCoke'}
-                                        <td><mark>{Math.round(result.baseResult.resultData[`${field.name}`])}</mark></td>
-                                        <td><mark>{Math.round(result.comparativeResult.resultData[`${field.name}`])}</mark></td>
-                                        <td>{Math.abs(Math.round(result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]))}</td>
-                                    {:else}
-                                        <td><mark>{Math.round(result.baseResult.resultData[`${field.name}`] * 100) / 100}</mark></td>
-                                        <td><mark>{Math.round(result.comparativeResult.resultData[`${field.name}`] * 100) / 100}</mark></td>
-                                        <td>{Math.abs(Math.round((result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]) * 100) / 100)}</td>
-                                    {/if}
-                                {/if}
+                                <td>{field.description}</td>
+                                <td><mark>{Math.round(result.baseResult.resultData[`${field.name}`] * 10000) / 10000}</mark></td>
+                                <td><mark>{Math.round(result.comparativeResult.resultData[`${field.name}`] * 10000) / 10000}</mark></td>
+                                <td>{Math.abs(Math.round((result.comparativeResult.resultData[`${field.name}`] - result.baseResult.resultData[`${field.name}`]) * 10000) / 10000)}</td>
                             </tr>
                         {/each}
                     </tbody>
@@ -140,7 +211,7 @@
             </div>
         {/if}
     {:else}
-        <p>Сопоставление параметров доступно только для авторизированных пользователей</p>
+        <p>Войдите в систему, чтобы воспользоваться функционалом</p>
     {/if}
 </div>
 

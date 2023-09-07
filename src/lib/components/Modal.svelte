@@ -41,16 +41,11 @@
 </script>
 
 {#if visible}
-    <div class="modal" in:fade="{{ duration: TRANSITION_DURATION }}" out:fade="{{ delay: TRANSITION_DELAY, duration: TRANSITION_DURATION }}">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-overlay" in:fade="{{ duration: TRANSITION_DURATION }}" out:fade="{{ delay: TRANSITION_DELAY, duration: TRANSITION_DURATION }}">
+        <div class="modal">
             <div class="modal-content" use:clickOutside={close}>
                 <div class="modal-header">
-                    <h5 class="modal-title">{ title }</h5>
-                    <button
-                        type="button"
-                        class="btn-close"
-                        on:click={close}
-                    />
+                    <h4 class="modal-title">{ title }</h4>
                 </div>
                 <div class="modal-body">
                     <slot />
@@ -73,6 +68,12 @@
 <style>
     .modal {
         display: block;
-        background-color: rgba(125,125,125,0.3);
+        z-index: 5;
+        top: 10%;
+        transform: scaleX(1) scaleY(1);
+    }
+    .modal-overlay {
+        display: block;
+        background-color: rgba(0,0,0,0.5);
     }
 </style>

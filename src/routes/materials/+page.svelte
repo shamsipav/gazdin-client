@@ -3,8 +3,7 @@
     import type { PageData } from './$types'
     import type { IMaterial, IModal, IResponse } from '$lib/types'
     import { API_URL, MATERIAL_FIELDS } from '$lib/consts'
-    import { Toast, Modal } from '$components'
-    import { fade } from 'svelte/transition'
+    import { Modal } from '$components'
     import { getCookie } from '$lib/utils'
 
     let confirmDeleteModal: IModal
@@ -133,18 +132,13 @@
 <form on:submit|preventDefault={updateOrCreateMaterial} bind:this={createForm} id="createForm" hidden></form>
 
 <div class="container">
-    <p class="h3 mb-3">Справочник шихтовых материалов</p>
+    <h4>Справочник шихтовых материалов</h4>
     {#if authorized}
         <div class="d-flex align-items-center mb-3">
-            <p class="lead me-3 mb-1">Изменения применяются автоматически</p>
-            {#if loaderShow}
-                <div class="spinner-border" role="status" transition:fade>
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            {/if}
+            <p class="me-3 mb-1">Изменения применяются автоматически</p>
         </div>
-        <div class="table-responsive">
-            <table class="table">
+        <div class="table-responsive" style="margin-bottom: 1rem;">
+            <table class="table table-materials">
                 <thead>
                     <tr>
                         {#each MATERIAL_FIELDS as field}
@@ -164,13 +158,13 @@
                                     </td>
                                 {/each}
                                 <td>
-                                    <button type="button" class="btn btn-outline-danger btn-sm" on:click={() => showConfirmDeleteModal(material)}>Удалить</button>
+                                    <button type="button" class="btn red lighten-2" on:click={() => showConfirmDeleteModal(material)}>Удалить</button>
                                 </td>
                             </tr>
                         {/each}
                     {/if}
                     {#if isNewMaterialAdded}
-                        <tr transition:fade>
+                        <tr>
                             {#each MATERIAL_FIELDS as field}
                                 {#if field.name == 'baseOne'}
                                     <td></td>
@@ -186,33 +180,28 @@
             </table>
         </div>
         {#if isNewMaterialAdded}
-            <button type="button" class="btn btn-outline-success" on:click={() => createForm.requestSubmit()}>Сохранить</button>
-            <button type="button" class="btn btn-outline-secondary" on:click={() => isNewMaterialAdded = false}>Отмена</button>
+            <button type="button" class="btn" on:click={() => createForm.requestSubmit()}>Сохранить</button>
+            <button type="button" class="btn red lighten-2" on:click={() => isNewMaterialAdded = false}>Отмена</button>
         {:else}
-            <button type="button" class="btn btn-outline-primary" on:click={() => isNewMaterialAdded = true}>Добавить</button>
+            <button type="button" class="btn" on:click={() => isNewMaterialAdded = true}>Добавить</button>
         {/if}
         {#if materials.length == 0 && !isNewMaterialAdded}
-            <p class="mt-3" transition:fade>В справочнике еще нет материалов</p>
+            <p class="mt-3">В справочнике еще нет материалов</p>
         {/if}
     {:else}
-        <p>Справочник шихтовых материалов доступен только для авторизированных пользователей</p>
+        <p>Войдите в систему, чтобы воспользоваться функционалом</p>
+    {/if}
+    {#if successMessage}
+        {#if notifyVisible}
+            <p class="text-success mt-1">{successMessage}</p>
+        {/if}
+    {/if}
+    {#if errorMessage}
+        {#if notifyVisible}
+            <p class="text-danger mt-1">{errorMessage}</p>
+        {/if}
     {/if}
 </div>
-
-{#if successMessage}
-    {#if notifyVisible}
-        <div class="notify" transition:fade>
-            <Toast variant="green">{successMessage}</Toast>
-        </div>
-    {/if}
-{/if}
-{#if errorMessage}
-    {#if notifyVisible}
-    <div class="notify" transition:fade>
-        <Toast variant="error">{errorMessage}</Toast>
-    </div>
-    {/if}
-{/if}
 
 <style>
 </style>

@@ -2,12 +2,10 @@
     import 'dayjs/locale/ru'
     import dayjs from 'dayjs'
     import type { IModal, IUser } from '$lib/types'
-    import { Modal, NewForm, Toast } from '$components'
+    import { Modal, NewForm } from '$components'
     import { API_URL } from '$lib/consts'
     import type { PageData } from './$types'
     import { logout } from '$lib/utils'
-    import { fade } from 'svelte/transition'
-    import { clickOutside } from '$lib/actions'
 
     dayjs.locale('ru')
 
@@ -17,8 +15,6 @@
 
     let loginModal: IModal = undefined
     let registerModal: IModal = undefined
-
-    let showDropdown = false
 
     let successMessage = ''
 
@@ -33,90 +29,80 @@
     }
 </script>
 
-<Modal bind:this={loginModal} hasFooter={false} title="Вход">
+<Modal bind:this={loginModal} hasFooter={false} title="Вход в систему">
     <NewForm path="{API_URL}/auth/login" on:success={authentificate} redirectTo="/">
-        <div class="form-floating mb-3">
-            <input type="email" name="email" class="form-control" id="email" placeholder="Email" required>
-            <label for="email">Email</label>
+        <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="name@example.com">
         </div>
-        <div class="form-floating">
-            <input type="password" name="password" class="form-control" id="password" placeholder="Пароль" required>
-            <label for="password">Пароль</label>
+        <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Пароль</label>
+            <input type="password" name="password" class="form-control">
         </div>
-        <button class="btn btn-success mt-3">Войти</button>
+        <button class="btn" style="margin-top: 1rem;">Войти</button>
     </NewForm>
 </Modal>
 
-<Modal bind:this={registerModal} hasFooter={false} title="Регистрация">
+<Modal bind:this={registerModal} hasFooter={false} title="Новый аккаунт">
     <NewForm path="{API_URL}/auth/reg" on:success={registration}>
-        <div class="form-floating mb-3">
-            <input type="text" name="firstName" class="form-control" id="firstName" placeholder="Имя" required>
-            <label for="firstName">Имя</label>
+        <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Имя</label>
+            <input type="text" name="firstName" class="form-control">
         </div>
-        <div class="form-floating mb-3">
-            <input type="text" name="lastName" class="form-control" id="lastName" placeholder="Фамилия" required>
-            <label for="lastName">Фамилия</label>
+        <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Фамилия</label>
+            <input type="text" name="lastName" class="form-control">
         </div>
-        <div class="form-floating mb-3">
-            <input type="email" name="email" class="form-control" id="email" placeholder="Email" required>
-            <label for="email">Email</label>
+        <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="name@example.com">
         </div>
-        <div class="form-floating">
-            <input type="password" name="password" class="form-control" id="password" placeholder="Пароль" required>
-            <label for="password">Пароль</label>
+        <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Пароль</label>
+            <input type="password" name="password" class="form-control">
         </div>
-        <button class="btn btn-success mt-3">Регистрация</button>
+        <button class="btn" style="margin-top: 1rem;">Создать аккаунт</button>
     </NewForm>
 </Modal>
 
-<nav class="navbar navbar-expand-lg bg-body-tertiary mb-3">
-    <div class="container">
-        <a class="navbar-brand" href="/">GazDinWeb</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/comparison">Сравнение</a>
+<div class="navbar-fixed">
+    <nav class="brown lighten-2">
+        <div class="nav-wrapper container">
+            <a href="/" class="brand-logo">GazDinWeb</a>
+            <ul id="nav-mobile" class="right hide-on-med-and-down">
+                <li>
+                    <a href="/comparison">Сравнение</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/project">Проектный режим</a>
+                <li>
+                    <a href="/project">Проектный режим</a>
                 </li>
-                <li class="nav-item dropdown">
-                    <!-- svelte-ignore a11y-click-events-have-key-events -->
-                    <a class="nav-link dropdown-toggle" href="" on:click={() => showDropdown = !showDropdown} use:clickOutside={() => showDropdown = false}>Справочники</a>
-                    <ul class="dropdown-menu" class:show={showDropdown}>
-                        <li class="nav-item">
-                            <a class="dropdown-item" href="/reference" on:click={() => showDropdown = false}>Справочник корректировочных коэффициентов</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="dropdown-item" href="/materials" on:click={() => showDropdown = false}>Справочник шихтовых материалов</a>
-                        </li>
-                    </ul>
+                <li>
+                    <a href="/materials">Справочник шихтовых материалов</a>
                 </li>
+                {#if user}
+                    <li style="display: flex; align-items: center; height: 64px; margin-left: 2rem;">
+                        <p class="link-bold" style="margin-right: 1rem">{user.firstName}</p>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" on:click={logout}>Выйти</button>
+                    </li>
+                {:else}
+                    <li style="margin-left: 2rem;">
+                        <button type="button" class="btn btn-primary btn-sm me-2" on:click={loginModal.open}>Войти</button>
+                        <button type="button" class="btn btn-primary btn-sm" on:click={registerModal.open}>Зарегистрироваться</button>
+                    </li>
+                {/if}
             </ul>
-            {#if user}
-                <a href="/lk" class="link-bold mb-0 me-3">{user.firstName}</a>
-                <button type="button" class="btn btn-outline-secondary btn-sm" on:click={logout}>Выйти</button>
-            {:else}
-                <button type="button" class="btn btn-success btn-sm me-2" on:click={loginModal.open}>Войти</button>
-                <button type="button" class="btn btn-outline-success btn-sm" on:click={registerModal.open}>Регистрация</button>
-            {/if}
+    
         </div>
-    </div>
-</nav>
+    </nav>
+</div>
 
 <main>
     <slot />
-    {#if successMessage}
-       <div class="notify" transition:fade>
-           <Toast variant="green">{successMessage}</Toast>
-       </div>
-    {/if}
 </main>
 
 <footer>
     <div class="container">
-        <!-- <p class="mt-5 mb-3 text-center">Copyright © {new Date().getFullYear()} | TeploAPI by Pavel Shamsimukhametov</p> -->
-        <p class="mt-5 mb-3 text-center">Магистерская диссертация | Иван Уланов НМТМ-223901</p>
+        <p class="mt-5 mb-3 text-center">Магистерская диссертация<br/>Иван Уланов НМТМ-223901</p>
     </div>
 </footer>
 

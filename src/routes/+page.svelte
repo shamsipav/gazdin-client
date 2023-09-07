@@ -1,12 +1,11 @@
 <script lang="ts">
     import axios from 'axios'
     import dayjs from 'dayjs'
-    import { Form, Toast } from '$components'
+    import { Form } from '$components'
     import { API_URL, VARIANT_FIELDS } from '$lib/consts'
     import type { IVariant, IResponse, IUser } from '$lib/types'
     import type { PageData } from './$types'
     import { getCookie } from '$lib/utils'
-    import { fade } from 'svelte/transition'
 
     export let data: PageData
 
@@ -23,7 +22,7 @@
         defaultState = selectedVariant == 0 ? data.default : variants.find(x => x.id == selectedVariant)
         saveVariant = false
 
-        notifyMessage = `Вариант "${defaultState.name === null ? 'По умолчанию' : defaultState.name}" успешно загружен`
+        notifyMessage = `Вариант №${defaultState.id} успешно загружен`
         setTimeout(() => notifyMessage = '', 2500)
     }
 
@@ -49,7 +48,7 @@
         }
 
         if (defaultState.id > 0 && !saveVariant)
-            notifyMessage = `Вариант ${defaultState.name ? `"${defaultState.name}"` : 'Без названия'} от ${defaultState.saveDate ? dayjs(defaultState.saveDate).format('DD.MM.YYYY') : 'неизвестной даты'} обновлен`
+            notifyMessage = `Вариант №${defaultState.id} от ${defaultState.saveDate ? dayjs(defaultState.saveDate).format('DD.MM.YYYY') : 'неизвестной даты'} обновлен`
         else
             notifyMessage = 'Расчет базового периода выполнен успешно'
 
@@ -62,11 +61,11 @@
 </svelte:head>
 
 <div class="container">
-    <p class="h3 mb-3">Расчет базового периода</p>
+    <h4>Расчет базового периода</h4>
     {#if user}
-        <p class="lead mb-2">Варианты исходных данных</p>
+        <h6>Варианты исходных данных</h6>
         {#if variants?.length > 0}
-            <select class="form-select mb-3" bind:value={selectedVariant} aria-label="Default select example" on:change={() => getCurrentVariant(selectedVariant)}>
+            <select class="browser-default" bind:value={selectedVariant} on:change={() => getCurrentVariant(selectedVariant)} style="margin-bottom: 1rem;">
                 <option selected disabled>Вариант исходных данных</option>
                 <option selected value="0">По умолчанию</option>
                 {#each variants as variant}
@@ -76,7 +75,7 @@
                 {/each}
             </select>
         {:else}
-            <p class="mt-3">Нет сохраненных вариантов, загружен вариант по умолчанию</p>
+            <p class="mt-3" style="margin-bottom: 1rem;">Нет сохраненных вариантов, загружен вариант по умолчанию</p>
         {/if}
     {/if}
     {#if Object.keys(defaultState).length > 0}
@@ -84,7 +83,7 @@
             {#if defaultState.id > 0}
                 <input type="number" name="id" value={defaultState.id} hidden>
             {/if}
-            <table class="table">
+            <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th scope="col">Параметр</th>
@@ -92,7 +91,27 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <tr>
+                        <td><i>Содержание элементов в шлаке</i></td>
+                        <td></td>
+                    </tr>
                     {#each VARIANT_FIELDS as field}
+                        {#if field.name === 'i40'}
+                            <tr>
+                                <td><i>Гранулометрический состав кокса<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                <td></td>
+                            </tr>
+                        {:else if field.name === 'i45'}
+                            <tr>
+                                <td><i>Гранулометрический состав и порозность агломерата<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                <td></td>
+                            </tr>
+                        {:else if field.name === 'j50'}
+                            <tr>
+                                <td><i>Гранулометрический состав окатышей<br/>Содержание фракции, % (по размеру фракции, мм)</i></td>
+                                <td></td>
+                            </tr>
+                        {/if}
                         <tr>
                             <td>{field.description}</td>
                             <td>
@@ -102,30 +121,23 @@
                     {/each}
                 </tbody>
             </table>
-            <div class="d-flex align-items-center">
-                <button type="submit" class="btn btn-success me-3">Отправить</button>
+            <div style="display: flex; align-items: center; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary mt-3">Отправить</button>
                 {#if user}
-                    <div class="d-flex align-items-center">
-                        <!-- svelte-ignore a11y-click-events-have-key-events -->
-                        <div class="form-check" style="flex: 1 0 auto;" on:click={() => saveVariant = !saveVariant}>
-                            <input name="save" class="form-check-input" type="checkbox" value={saveVariant} checked={saveVariant}>
-                            <!-- svelte-ignore a11y-label-has-associated-control -->
-                            <label class="form-check-label">Сохранить вариант исходных данных</label>
-                        </div>
-                        {#if saveVariant}
-                            <input transition:fade type="text" class="form-control ms-3" name="name" placeholder="Название варианта" autocomplete="off" required>
-                        {/if}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <div class="d-flex align-items-center" style="margin-left: 2rem;">
+                        <label>
+                            <input bind:checked={saveVariant} type="checkbox" name="save" class="filled-in" value={saveVariant} />
+                            <span>Сохранить вариант исходных данных</span>
+                        </label>
                     </div>
                 {/if}
             </div>
+            {#if notifyMessage}
+                <p class="text-success">{notifyMessage}</p>
+            {/if}
         </Form>
     {:else}
         <p>Не удалось получить исходных вариант исходных данных для расчета с сервера WebAPI</p>
     {/if}
 </div>
-
-{#if notifyMessage}
-    <div class="notify" transition:fade>
-        <Toast variant="green">{notifyMessage}</Toast>
-    </div>
-{/if}
